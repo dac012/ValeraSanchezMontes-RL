@@ -66,7 +66,7 @@ class ArmBinomial(Arm):
         n_values = list(n_values)
 
         # TODO
-        # ¿Generar probabilidades aleatorias? 
+        # ¿Generar probabilidades aleatorias?
         sigma = 1.0
 
         arms = [ArmBinomial(n, p) for n in n_values]
