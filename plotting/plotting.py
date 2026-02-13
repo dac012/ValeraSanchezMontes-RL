@@ -73,5 +73,27 @@ def plot_optimal_selections(steps: int, optimal_selections: np.ndarray, algorith
     :param algorithms: Lista de instancias de algoritmos comparados.
     """
 
-    raise NotImplementedError("Esta función aún no ha sido implementada.")
+    # Configuración del tema visual (mismo estilo que rewards)
+    sns.set_theme(style="whitegrid", palette="muted", font_scale=1.2)
+
+    plt.figure(figsize=(14, 7))
+    
+    for idx, algo in enumerate(algorithms):
+        label = get_algorithm_label(algo)
+        
+        # Convertimos la proporción (0-1) a porcentaje (0-100) para la gráfica
+        y_values = optimal_selections[idx] * 100 
+        
+        plt.plot(range(steps), y_values, label=label, linewidth=2)
+
+    plt.xlabel('Pasos de Tiempo', fontsize=14)
+    plt.ylabel('% Selección Óptima', fontsize=14)
+    plt.title('Porcentaje de Selección del Brazo Óptimo vs Pasos de Tiempo', fontsize=16)
+    
+    # Fijamos el eje Y entre 0 y 100 (con un pequeño margen) para mejor visualización
+    plt.ylim(0, 105) 
+    
+    plt.legend(title='Algoritmos', loc='lower right') # 'lower right' suele tapar menos en estas gráficas
+    plt.tight_layout()
+    plt.show()
 
