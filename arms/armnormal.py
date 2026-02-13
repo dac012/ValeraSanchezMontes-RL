@@ -58,7 +58,7 @@ class ArmNormal(Arm):
         return f"ArmNormal(mu={self.mu}, sigma={self.sigma})"
 
     @classmethod
-    def generate_arms(cls, k: int, mu_min: float = 1, mu_max: float = 10.0):
+    def generate_arms(cls, k: int, mu_min: float = 1, mu_max: float = 10.0, sigma: float = 1):
         """
         Genera k brazos con medias únicas en el rango [mu_min, mu_max].
 
@@ -69,6 +69,7 @@ class ArmNormal(Arm):
         """
         assert k > 0, "El número de brazos k debe ser mayor que 0."
         assert mu_min < mu_max, "El valor de mu_min debe ser menor que mu_max."
+        assert sigma > 0, "El valor de sigma tiene que ser mayor que 0."
 
         # Generar k- valores únicos de mu con decimales
         mu_values = set()
@@ -78,7 +79,6 @@ class ArmNormal(Arm):
             mu_values.add(mu)
 
         mu_values = list(mu_values)
-        sigma = 1.0
 
         arms = [ArmNormal(mu, sigma) for mu in mu_values]
 

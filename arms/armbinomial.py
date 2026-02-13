@@ -44,32 +44,27 @@ class ArmBinomial(Arm):
         return f"ArmBinomial(n={self.n}, p={self.p})"
 
     @classmethod
-    def generate_arms(cls, k: int, n_min: int = 1, n_max: int = 10.0):
+    def generate_arms(cls, k: int, n: int = 10):
         """
-        Genera k brazos con número de acciones únicos en el rango [n_min, n_max].
+        Genera k brazos con probabilidades únicas.
 
         :param k: Número de brazos a generar.
-        :param n_min: Valor mínimo del número de acciones.
-        :param n_max: Valor máximo del número de acciones.
+        :param n: Número de acciones.
         :return: Lista de brazos generados.
         """
         assert k > 0, "El número de brazos k debe ser mayor que 0."
-        assert n_min < n_max, "El valor de n_min debe ser menor que n_max."
-        assert n_max-n_min >= k, "El número posible de valores tiene que ser mayor o igual que el número de brazos que queremos generar"
+        assert n > 0, "El valor de n debe ser mayor que 0."
 
-        # Generar k-valores únicos de n
-        n_values = set()
-        while len(n_values) < k:
-            n = np.random.randint(n_min, n_max+1) # incluye n_max
-            n_values.add(n)
+        # Generar k-valores únicos de p
+        p_values = set()
+        while len(p_values) < k:
+            p = np.random.uniform(0, 1)
+            p = round(p, 2)
+            p_values.add(p)
 
-        n_values = list(n_values)
+        p_values = list(p_values)
 
-        # TODO
-        # ¿Generar probabilidades aleatorias?
-        sigma = 1.0
-
-        arms = [ArmBinomial(n, p) for n in n_values]
+        arms = [ArmBinomial(n, p) for p in p_values]
 
         return arms
 
