@@ -81,8 +81,7 @@ def plot_optimal_selections(steps: int, optimal_selections: np.ndarray, algorith
     for idx, algo in enumerate(algorithms):
         label = get_algorithm_label(algo)
         
-        # Convertimos la proporción (0-1) a porcentaje (0-100) para la gráfica
-        y_values = optimal_selections[idx] * 100 
+        y_values = optimal_selections[idx] 
         
         plt.plot(range(steps), y_values, label=label, linewidth=2)
 
@@ -90,10 +89,54 @@ def plot_optimal_selections(steps: int, optimal_selections: np.ndarray, algorith
     plt.ylabel('% Selección Óptima', fontsize=14)
     plt.title('Porcentaje de Selección del Brazo Óptimo vs Pasos de Tiempo', fontsize=16)
     
-    # Fijamos el eje Y entre 0 y 100 (con un pequeño margen) para mejor visualización
-    plt.ylim(0, 105) 
-    
     plt.legend(title='Algoritmos', loc='lower right') # 'lower right' suele tapar menos en estas gráficas
     plt.tight_layout()
     plt.show()
 
+def plot_regret(steps: int, regret_accumulated: np.ndarray, algorithms: List[Algorithm], *args):
+    """
+    Genera la gráfica de Regret Acumulado vs Pasos de Tiempo
+    :param steps: Número de pasos de tiempo.
+    :param regret_accumulated: Matriz de regret acumulado (algoritmos x pasos).
+    :param algorithms: Lista de instancias de algoritmos comparados.
+    :param args: Opcional. Parámetros que consideres. P.e. la cota teórica Cte * ln(T).
+    """
+    sns.set_theme(style="whitegrid", palette="muted", font_scale=1.2)
+
+    plt.figure(figsize=(14, 7))
+
+    # Curvas por algoritmo
+    for idx, algo in enumerate(algorithms):
+        label = get_algorithm_label(algo)
+        plt.plot(range(steps), regret_accumulated[idx], label=label, linewidth=2)
+
+    # TODO: Implementar otros parametros
+    for i, item in enumerate(args, start=1):
+        if isinstance(item, tuple) and len(item) == 2:
+            curve, label = item
+        else:
+            curve, label = item, f"Extra {i}"
+
+        curve = np.asarray(curve)
+        if curve.shape[0] != steps:
+            raise ValueError(f"La curva adicional '{label}' debe tener longitud {steps}, pero tiene {curve.shape[0]}.")
+
+        plt.plot(range(steps), curve, linestyle="--", linewidth=2, label=label)
+
+    plt.xlabel("Pasos de Tiempo", fontsize=14)
+    plt.ylabel("Regret Acumulado", fontsize=14)
+    plt.title("Regret Acumulado vs Pasos de Tiempo", fontsize=16)
+    plt.legend(title="Algoritmos", loc="upper left")
+    plt.tight_layout()
+    plt.show()
+    
+
+"""def plot_arm_statistics(arm_stats: LoQueConsideres, algorithms: List[Algorithm], *args):
+
+    Genera gráficas separadas de Selección de Arms:
+    Ganancias vs Pérdidas para cada algoritmo.
+    :param arm_stats: Lista (de diccionarios) con estadísticas de cada brazo por algoritmo.
+    :param algorithms: Lista de instancias de algoritmos comparados.
+    :param args: Opcional. Parámetros que consideres
+    
+      """
