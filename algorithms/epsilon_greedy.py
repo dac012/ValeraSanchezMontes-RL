@@ -45,8 +45,16 @@ class EpsilonGreedy(Algorithm):
             # Selecciona un brazo al azar
             chosen_arm = np.random.choice(self.k)
         else:
-            # Selecciona el brazo con la recompensa promedio estimada más alta
-            chosen_arm = np.argmax(self.values)
+            # Introducimos desempate aleatorio entre brazos con valor máximo
+            # para asegurar un comportamiento consistente con la definición
+            # teórica del algoritmo greedy. Sin este ajuste, np.argmax introduce
+            # un sesgo determinista hacia el primer índice.
+            #chosen_arm = np.argmax(self.values) --> version anterior
+
+            max_value = np.max(self.values)
+            candidates = np.flatnonzero(self.values == max_value)
+            chosen_arm = np.random.choice(candidates)
+
 
         return chosen_arm
 
