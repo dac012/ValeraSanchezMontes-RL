@@ -48,8 +48,7 @@ class EpsilonGreedy(Algorithm):
             # Introducimos desempate aleatorio entre brazos con valor máximo
             # para asegurar un comportamiento consistente con la definición
             # teórica del algoritmo greedy. Sin este ajuste, np.argmax introduce
-            # un sesgo determinista hacia el primer índice.
-            #chosen_arm = np.argmax(self.values) --> version anterior
+            # un sesgo determinista hacia los primeros brazos.
 
             max_value = np.max(self.values)
             candidates = np.flatnonzero(self.values == max_value)

@@ -12,11 +12,12 @@ with the additional restriction that it may not be used for commercial purposes.
 For more details about GPL-3.0: https://www.gnu.org/licenses/gpl-3.0.html
 """
 
-from typing import List
+from typing import List, Dict, Any
 
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from algorithms import Algorithm, EpsilonGreedy
 
@@ -134,12 +135,69 @@ def plot_regret(steps: int, regret_accumulated: np.ndarray, algorithms: List[Alg
     plt.show()
     
 
-"""def plot_arm_statistics(arm_stats: LoQueConsideres, algorithms: List[Algorithm], *args):
+def plot_arm_statistics(arm_stats: List[Dict[int, Dict[str, Any]]], 
+                        algorithms: List[Any], 
+                        experiment_label: str = "Resultados"):
+    """
+    Genera un panel de gráficas de barras comparando el rendimiento de cada brazo por algoritmo.
 
-    Genera gráficas separadas de Selección de Arms:
-    Ganancias vs Pérdidas para cada algoritmo.
-    :param arm_stats: Lista (de diccionarios) con estadísticas de cada brazo por algoritmo.
+    :param arm_stats:  Lista (de diccionarios) con estadísticas de cada brazo por algoritmo.
     :param algorithms: Lista de instancias de algoritmos comparados.
-    :param args: Opcional. Parámetros que consideres
+    :param experiment_label: Texto opcional para el título.
+    """
+    n_algos = len(algorithms)
     
-      """
+    # Configuración dinámica del tamaño de la figura según el nº de algoritmos
+    # Usamos subplots verticales para facilitar la lectura de las etiquetas del eje X
+    fig, axes = plt.subplots(nrows=n_algos, ncols=1, figsize=(10, 5 * n_algos), constrained_layout=True)
+    
+    # Aseguramos que axes sea iterable incluso si hay solo 1 algoritmo
+    if n_algos == 1:
+        axes = [axes]
+
+    for idx, (ax, stats) in enumerate(zip(axes, arm_stats)):
+        # Preparar datos
+        algo_obj = algorithms[idx]
+        algo_name = get_algorithm_label(algo_obj) if hasattr(algo_obj, 'select_arm') else str(algo_obj)
+        
+        # Ordenamos por ID de brazo para que el eje X sea coherente
+        brazos_ids = sorted(stats.keys())
+        
+        medias = [stats[arm]['avg_reward'] for arm in brazos_ids]
+        conteos = [stats[arm]['times_selected'] for arm in brazos_ids]
+        es_optimo = [stats[arm]['optimal_arm'] == 1 for arm in brazos_ids]
+
+        # Configurar colores (verde para óptimo, rojo para el resto)
+        colores = ['#2ecc71' if opt else '#e74c3c' for opt in es_optimo]
+
+        # Dibujar barras
+        barras = ax.bar(brazos_ids, medias, color=colores, alpha=0.85, edgecolor='black', linewidth=0.7)
+
+        # Añadir etiquetas de texto encima de la barra
+        max_y = max(medias) if medias else 1.0
+        offset = max_y * 0.02
+        
+        for bar, n_count, is_opt in zip(barras, conteos, es_optimo):
+            height = bar.get_height()
+            
+            # Nº de selecciones
+            text_label = f"N={int(n_count)}"
+            
+            font_weight = 'bold' if is_opt else 'normal'
+            
+            ax.text(bar.get_x() + bar.get_width()/2, height + offset, 
+                    text_label, ha='center', va='bottom', fontsize=9, fontweight=font_weight)
+
+        ax.set_title(f"{algo_name}", fontsize=13, fontweight='bold', pad=10)
+        ax.set_ylabel("Recompensa Media")
+        ax.set_xticks(brazos_ids)
+        ax.set_xticklabels([f"Brazo {i}" for i in brazos_ids])
+        
+        ax.grid(axis='y', linestyle='--', alpha=0.4)
+        
+        # Línea base en 0
+        ax.axhline(0, color='black', linewidth=0.8)
+
+    # Título
+    fig.suptitle(f"Análisis de Exploración vs Explotación: {experiment_label}", fontsize=16, y=1.02)
+    plt.show()
