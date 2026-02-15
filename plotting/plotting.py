@@ -89,6 +89,9 @@ def plot_optimal_selections(steps: int, optimal_selections: np.ndarray, algorith
     plt.ylabel('% Selección Óptima', fontsize=14)
     plt.title('Porcentaje de Selección del Brazo Óptimo vs Pasos de Tiempo', fontsize=16)
     
+    # Fijamos el eje Y entre 0 y 100 (con un pequeño margen) para mejor visualización
+    plt.ylim(0, 105)
+
     plt.legend(title='Algoritmos', loc='lower right') # 'lower right' suele tapar menos en estas gráficas
     plt.tight_layout()
     plt.show()
