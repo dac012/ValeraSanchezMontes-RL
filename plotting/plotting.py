@@ -39,7 +39,7 @@ def get_algorithm_label(algo: Algorithm) -> str:
     elif isinstance(algo, Softmax):
         label += f" (tau={algo.tau})"
     elif isinstance(algo, EpsilonDecay):
-        label += f"(epsilon_0={algo.epsilon_0}, lambda={algo.lambda_decay}, epsilon_min={algo.epsilon_min})"
+        label += f" (epsilon_0={algo.epsilon_0}, lambda={algo.lambda_decay}, epsilon_min={algo.epsilon_min})"
     elif isinstance(algo, UCB2):
         label += f" (alpha={algo.alpha})"
     # Añadir más condiciones para otros algoritmos aquí
