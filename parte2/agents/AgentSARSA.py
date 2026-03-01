@@ -1,7 +1,7 @@
 import numpy as np
 import gymnasium as gym
 
-class AgentSarsa:
+class AgentSARSA:
     def __init__(self, env: gym.Env,
                  epsilon: float = 1.0,
                  decay: bool = True,
