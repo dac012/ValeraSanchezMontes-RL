@@ -1,202 +1,193 @@
 import numpy as np
-import gymnasium as gym
+from collections import deque
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import gymnasium as gym
 
-
-class QNet(nn.Module):
-    def __init__(self, obs_dim: int, nA: int, hidden: int = 12):
-        super().__init__()
-        self.model = nn.Sequential(
-            nn.Linear(obs_dim, hidden),
+# ==========================================================
+# 1. RED NEURONAL
+# ==========================================================
+class DQN_Network(nn.Module):
+    def __init__(self, num_actions, input_dim):
+        super(DQN_Network, self).__init__()
+        self.FC = nn.Sequential(
+            nn.Linear(input_dim, 12),
             nn.ReLU(),
-            nn.Linear(hidden, hidden),
+            nn.Linear(12, 8),
             nn.ReLU(),
-            nn.Linear(hidden, nA),
+            nn.Linear(8, num_actions)
         )
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.model(x)
+        for layer in [self.FC]:
+            for module in layer:
+                if isinstance(module, nn.Linear):
+                    nn.init.kaiming_uniform_(module.weight, nonlinearity='relu')
 
+    def forward(self, x):
+        return self.FC(x)
 
-class AgentSarsaSemiGrad:
-    def __init__(self,
-                 env: gym.Env,
-                 n: int = 1,
+# ==========================================================
+# 2. AGENTE n-step Semi-Gradient SARSA (corregido para Acrobot)
+#   - on-policy real: update devuelve next_action
+#   - truncated cuenta como done para cortar el retorno
+#   - flush interno al terminar episodio (sin flush dummy)
+# ==========================================================
+class AgentNStepSemiGradientSARSA:
+    def __init__(self, env: gym.Env,
+                 n: int = 3,
                  epsilon: float = 1.0,
                  decay: bool = True,
-                 decay_c: float = 1000.0,
                  discount_factor: float = 0.99,
-                 alpha: float = 1e-3,
-                 hidden: int = 12,
-                 seed: int = 0,
-                 device: str | None = None):
+                 lr: float = 3e-4,
+                 epsilon_min: float = 0.01,
+                 epsilon_decay: float = 0.9995,
+                 grad_clip_norm: float | None = 10.0):
 
         self.env = env
         self.nA = env.action_space.n
-        self.obs_dim = int(np.prod(env.observation_space.shape))
+        self.nS = env.observation_space.shape[0]
 
         self.n = int(n)
-        if self.n < 1:
-            raise ValueError("n debe ser >= 1")
-
+        self.gamma = float(discount_factor)
         self.epsilon = float(epsilon)
         self.decay = bool(decay)
-        self.decay_c = float(decay_c)
-        self.gamma = float(discount_factor)
+        self.epsilon_min = float(epsilon_min)
+        self.epsilon_decay = float(epsilon_decay)
+        self.grad_clip_norm = grad_clip_norm
 
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-        self.qnet = QNet(self.obs_dim, self.nA, hidden=hidden).to(self.device)
-        self.optimizer = optim.Adam(self.qnet.parameters(), lr=float(alpha))
+        self.q_network = DQN_Network(self.nA, self.nS)
+        self.optimizer = optim.Adam(self.q_network.parameters(), lr=lr)
         self.loss_fn = nn.MSELoss()
 
-        np.random.seed(seed)
-        torch.manual_seed(seed)
+        # (S_t, A_t, R_{t+1}, S_{t+1}, A_{t+1}, done)
+        self.n_step_buffer = deque(maxlen=self.n)
 
-        self.S = [None] * (self.n + 1)
-        self.A = [None] * (self.n + 1)
-        self.R = [0.0] * (self.n + 1)
+        self.t = 0
+        self.T = np.inf
 
-        self.T = None
-
+        # Stats compatibles con tu estilo
         self.stats = 0.0
         self.list_stats = []
         self.episode_lengths = []
-        self.step_count = 0
-        self.t = 0
         self.list_stats_success = []
+        self.step_count = 0
         self.episode_return = 0.0
+        self.episode_idx = 0
 
-        self.last_terminated = False
-        self.last_truncated = False
-
-
-    def _to_tensor(self, obs):
-        obs = np.asarray(obs, dtype=np.float32).reshape(1, -1)
-        return torch.from_numpy(obs).to(self.device)
-
-
-    # Select and store an action A_t ~ ε-greedy wrt q̂(S_t, ·; w)
-    @torch.no_grad()
+    # ======================================================
+    # ε-greedy
+    # ======================================================
     def get_action(self, state):
         if np.random.rand() < self.epsilon:
-            return int(np.random.randint(self.nA))
-
-        s = self._to_tensor(state)
-        q_values = self.qnet(s)
+            return np.random.randint(self.nA)
+        with torch.no_grad():
+            state_t = torch.FloatTensor(state).unsqueeze(0)
+            q_values = self.q_network(state_t)
         return int(torch.argmax(q_values, dim=1).item())
 
-
-    @torch.no_grad()
     def get_greedy_action(self, state):
-        s = self._to_tensor(state)
-        q_values = self.qnet(s)
+        with torch.no_grad():
+            state_t = torch.FloatTensor(state).unsqueeze(0)
+            q_values = self.q_network(state_t)
         return int(torch.argmax(q_values, dim=1).item())
 
+    # ======================================================
+    # UPDATE: n-step semi-gradient SARSA
+    # Devuelve next_action para que el notebook la ejecute (on-policy real)
+    # ======================================================
+    def update(self, state, action, next_state, reward, terminated, truncated, info):
+        done = terminated or truncated
 
-    # Initialize and store S0 != terminal
-    # Select and store A0
-    # T <- ∞
-    def start_episode(self, s0):
-        self.S[0] = s0
-        self.A[0] = self.get_action(s0)
-        self.T = np.inf
-        self.step_count = 0
-        self.episode_return = 0.0
+        # inicio episodio
+        if self.t == 0:
+            self.T = np.inf
+            self.n_step_buffer.clear()
 
+        # seleccionar A_{t+1} una sola vez
+        if done:
+            self.T = self.t + 1
+            next_action = None
+        else:
+            next_action = self.get_action(next_state)
 
-    # Loop for t = 0,1,2,...
-    def step(self, t):
+        # Guardar transición usando done (incluye truncated)
+        self.n_step_buffer.append((state, action, reward, next_state, next_action, done))
+
         self.step_count += 1
+        self.episode_return += reward
 
-        # If t < T then:
-        #   Take action A_t
-        #   Observe and store R_{t+1} and S_{t+1}
-        if t < self.T:
-
-            s_t = self.S[t % (self.n + 1)]
-            a_t = int(self.A[t % (self.n + 1)])
-
-            s_tp1, r_tp1, terminated, truncated, info = self.env.step(a_t)
-
-            self.last_terminated = bool(terminated)
-            self.last_truncated = bool(truncated)
-
-            self.R[(t + 1) % (self.n + 1)] = float(r_tp1)
-            self.S[(t + 1) % (self.n + 1)] = s_tp1
-
-            self.episode_return += float(r_tp1)
-
-            done = bool(terminated or truncated)
-
-            # If S_{t+1} is terminal then T <- t+1
-            if done:
-                self.T = t + 1
-            else:
-                # else Select and store A_{t+1}
-                self.A[(t + 1) % (self.n + 1)] = self.get_action(s_tp1)
-
-        # τ <- t - n + 1
-        tau = t - self.n + 1
-
-        # If τ >= 0 then:
+        # τ ← t − n + 1
+        tau = self.t - self.n + 1
         if tau >= 0:
+            self._update_tau()
 
-            # G <- sum_{i=τ+1}^{min(τ+n, T)} γ^{i-τ-1} R_i
-            G = 0.0
-            upper = int(min(tau + self.n, self.T))
-            for i in range(tau + 1, upper + 1):
-                G += (self.gamma ** (i - tau - 1)) * self.R[i % (self.n + 1)]
+        self.t += 1
 
-            # If τ + n < T then:
-            #   G <- G + γ^n q̂(S_{τ+n}, A_{τ+n}, w)
-            if (tau + self.n) < self.T:
-                s_boot = self.S[(tau + self.n) % (self.n + 1)]
-                a_boot = int(self.A[(tau + self.n) % (self.n + 1)])
+        # flush interno al terminar episodio
+        if done:
+            while len(self.n_step_buffer) > 0:
+                self._update_tau()
 
-                with torch.no_grad():
-                    q_boot = self.qnet(self._to_tensor(s_boot))[0, a_boot].item()
-
-                G += (self.gamma ** self.n) * q_boot
-
-            # w <- w + α [G - q̂(S_τ, A_τ, w)] ∇ q̂(S_τ, A_τ, w)
-            s_tau = self.S[tau % (self.n + 1)]
-            a_tau = int(self.A[tau % (self.n + 1)])
-
-            q_values = self.qnet(self._to_tensor(s_tau))
-            q_sa = q_values[0, a_tau]
-
-            target = torch.tensor(G, dtype=torch.float32, device=self.device)
-
-            loss = self.loss_fn(q_sa, target)
-
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
-
-        # Until τ = T - 1
-        done_episode = (tau == (self.T - 1))
-
-        if done_episode:
-
+            # stats
             self.episode_lengths.append(self.step_count)
-
-            if self.last_terminated and not self.last_truncated:
-                self.list_stats_success.append(1)
-            else:
-                self.list_stats_success.append(0)
+            self.list_stats_success.append(1 if terminated and not truncated else 0)
 
             self.stats += self.episode_return
-            self.list_stats.append(self.stats / (self.t + 1))
+            self.list_stats.append(self.stats / (self.episode_idx + 1))
 
+            # decay
             if self.decay:
-                self.epsilon = min(1.0, self.decay_c / (self.t + 1))
+                self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
 
-            self.t += 1
+            # reset episodio
+            self.t = 0
+            self.step_count = 0
+            self.episode_return = 0.0
+            self.episode_idx += 1
+            self.n_step_buffer.clear()
 
-        return done_episode
+            return None
 
+        return next_action
+
+    # ======================================================
+    def _update_tau(self):
+        s_tau, a_tau, _, _, _, _ = self.n_step_buffer[0]
+
+        G = 0.0
+        gamma_pow = 1.0
+
+        for i, (s, a, r, s_next, a_next, done_flag) in enumerate(self.n_step_buffer):
+            G += gamma_pow * float(r)
+            gamma_pow *= self.gamma
+
+            if done_flag:
+                break
+
+            # bootstrap solo si tenemos n pasos completos y no terminal
+            if i == self.n - 1 and a_next is not None:
+                with torch.no_grad():
+                    s_next_t = torch.FloatTensor(s_next).unsqueeze(0)
+                    q_boot = self.q_network(s_next_t)[0, int(a_next)].item()
+                G += gamma_pow * q_boot
+                break
+
+        s_tau_t = torch.FloatTensor(s_tau).unsqueeze(0)
+        q_pred = self.q_network(s_tau_t)[0, int(a_tau)]
+        target = torch.tensor(G, dtype=torch.float32)
+
+        loss = self.loss_fn(q_pred, target)
+
+        self.optimizer.zero_grad()
+        loss.backward()
+
+        if self.grad_clip_norm is not None:
+            torch.nn.utils.clip_grad_norm_(self.q_network.parameters(), self.grad_clip_norm)
+
+        self.optimizer.step()
+
+        self.n_step_buffer.popleft()
 
     def get_stats(self):
-        return self.list_stats, self.episode_lengths, self.list_stats_success
+        return self.q_network, self.list_stats, self.episode_lengths, self.list_stats_success
