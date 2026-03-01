@@ -1,40 +1,3 @@
-"""
-UCB2
-
-Extensión de UCB1 que selecciona brazos por BLOQUES (épocas) en lugar de
-recalcular el índice en cada tirada.
-
-Idea principal:
-Cuando se elige un brazo, se ejecuta varias veces consecutivas antes
-de volver a comparar índices. El tamaño del bloque crece de forma
-controlada según:
-
-    τ(k) = ceil((1 + alpha)^k)  -> número de tiradas consecutivas a un mismo brazo
-
-donde:
-    - k_a es el número de épocas del brazo a
-    - alpha ∈ (0,1) controla el balance exploración/explotación
-
-Índice UCB2: --> que tan prometedor es el brazo 
-
-    UCB2(a) = Q(a) +
-              sqrt( (1+alpha) * ln(e * t / τ(k_a)) / (2 * τ(k_a)) )
-
-Funcionamiento:
-1. Se prueba cada brazo una vez.
-2. Se calcula el índice UCB2 para cada brazo.
-3. Se selecciona el brazo con mayor índice.
-4. Se ejecuta durante:
-       ceil( τ(k_a + 1) - τ(k_a) )
-   tiradas consecutivas.
-5. Se incrementa k_a.
-
-Diferencia clave con UCB1:
-- UCB1 decide brazo en cada tirada.
-- UCB2 decide brazo por bloques crecientes.
-
-Esto reduce cambios frecuentes de acción y mantiene regret O(log T).
-"""
 import numpy as np
 
 from .algorithm import Algorithm
@@ -54,17 +17,21 @@ class UCB2(Algorithm):
         super().__init__(k)
         self.alpha = alpha 
 
-        # Incializamos k_a: número de épocas de la acción a
+        # Incializamos k_a, que es el número de épocas de la acción a
         self.epochs = np.zeros(self.k, dtype=int)
 
         # Variable para guardar qué brazo está actualmente en ejecución dentro del bloque.
-        self.current_arm: None
+        self.current_arm = None
         # Variable para guardar cuántas veces más debemos repetir ese brazo antes de volver a calcular el índice UCB2.
-        self.block_remaining: int = 0
+        self.block_remaining = 0
 
     def _tau(self, epoch: int) -> int:
         """Calcula el tamaño del bloque 
-        τ(k) = ceil((1+alpha)^k)"""
+        τ(k) = ceil((1+alpha)^k)
+        
+        :return: tamaño del bloque para la época dada.
+        """
+
         return int(np.ceil((1.0 + self.alpha) ** epoch))
     
     def _ucb2_index(self, t: int) -> np.ndarray:
@@ -77,6 +44,8 @@ class UCB2(Algorithm):
             t            = total de tiradas
             k_a          = self.epochs[a]
             tau(k_a)     = ceil((1+alpha)^(k_a))
+
+        :return: array con el índice UCB2 para cada brazo.
         """
 
         # τ(k_a) para cada brazo a
@@ -85,17 +54,17 @@ class UCB2(Algorithm):
         # Aseguramos t >= 1
         t = max(int(t), 1)
 
-        # Argumento del logaritmo: (e * t) / τ(k_a)
+        # (e * t) / τ(k_a)
         log_argument = (np.e * t) / tau_k
 
         # En teoría, cuando (e*t)/τ(k_a) < 1, el log es negativo y la raíz daría NaN.
         # Para evitarlo, forzamos log_argument >= 1  -> log >= 0
         log_argument = np.maximum(log_argument, 1.0)
 
-        # Numerador dentro de la raíz: (1+alpha) * ln( (e*t)/τ(k_a) )
+        # (1+alpha) * ln( (e*t)/τ(k_a) )
         numerator = (1.0 + self.alpha) * np.log(log_argument)
 
-        # Denominador dentro de la raíz: 2 * τ(k_a)
+        # 2 * τ(k_a)
         denominator = 2.0 * tau_k
 
         # Parte dentro de la raíz completa
@@ -117,9 +86,11 @@ class UCB2(Algorithm):
         """
         Selecciona brazo según UCB2 con ejecución por bloques (épocas).
         Si estamos dentro de un bloque, repetimos el mismo brazo.
+
+        :return: índice del brazo seleccionado.
         """
 
-          # Si hay brazos sin probar, probamos cada uno primero (inicialización)
+        # Si hay brazos sin probar, probamos cada uno primero
         for i in range(self.k):
             if self.counts[i] == 0:
                 self.current_arm = i
@@ -131,7 +102,7 @@ class UCB2(Algorithm):
             self.block_remaining -= 1
             return self.current_arm
 
-        # Si se ha acabado ese bloque: entonces cogemos un nuevo brazos y calculamos cuantas veces lo vamos a ejecutar
+        # Si se ha acabado ese bloque entonces cogemos un nuevo brazos y calculamos cuantas veces lo vamos a ejecutar
 
         # Calculamos el número total de tiradas realizadas hasta ahora
         t = int(np.sum(self.counts))
@@ -147,8 +118,7 @@ class UCB2(Algorithm):
         block_len = int(np.ceil(self._tau(k_a + 1) - self._tau(k_a)))
         block_len = max(block_len, 1)
 
-        # Guardamos estado de bloque actual:
-        # Cual es el brazo con el que estamos jugando y cuantas tiradas quedan según el tamaño de bloque
+        # Guardamos estado de bloque actual: Cual es el brazo con el que estamos jugando y cuantas tiradas quedan según el tamaño de bloque
         self.current_arm = chosen_arm
         self.block_remaining = block_len - 1
 

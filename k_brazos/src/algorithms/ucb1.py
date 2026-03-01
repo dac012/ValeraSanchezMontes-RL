@@ -20,7 +20,7 @@ class UCB1(Algorithm):
     def select_arm(self) -> int:
         """
         Selecciona el brazo que maximiza el índice UCB.
-        Fórmula: Q(a) + c * sqrt(ln(t) / N(a))
+        Q(a) + c * sqrt(ln(t) / N(a))
 
         :return: índice del brazo seleccionado.
         """

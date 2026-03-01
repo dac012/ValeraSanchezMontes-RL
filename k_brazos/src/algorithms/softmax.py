@@ -20,7 +20,7 @@ class Softmax(Algorithm):
     def select_arm(self) -> int:
         """
         Selecciona un brazo basándose en la función de Gibbs.
-        Fórmula: pi(a) = exp(Q(a)/tau) / sum(exp(Q(b)/tau))
+        pi(a) = exp(Q(a)/tau) / sum(exp(Q(b)/tau))
 
         :return: índice del brazo seleccionado.
         """
@@ -30,6 +30,10 @@ class Softmax(Algorithm):
         
         # Calculamos el numerador de la fórmula
         preferences = q_values / self.tau
+
+        # Para evitar problemas numéricos con exp(), restamos el máximo valor de preferences a todos los preferences.
+        preferences -= np.max(preferences)
+
         exp_values = np.exp(preferences)
         
         # Calculamos el denominador de la fórmula
@@ -42,7 +46,3 @@ class Softmax(Algorithm):
         chosen_arm = np.random.choice(self.k, p=probabilities)
         
         return chosen_arm
-
-
-
-

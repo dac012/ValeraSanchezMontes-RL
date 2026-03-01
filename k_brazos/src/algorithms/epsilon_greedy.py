@@ -1,17 +1,3 @@
-"""
-Module: algorithms/epsilon_greedy.py
-Description: Implementación del algoritmo epsilon-greedy para el problema de los k-brazos.
-
-Author: Luis Daniel Hernández Molinero
-Email: ldaniel@um.es
-Date: 2025/01/29
-
-This software is licensed under the GNU General Public License v3.0 (GPL-3.0),
-with the additional restriction that it may not be used for commercial purposes.
-
-For more details about GPL-3.0: https://www.gnu.org/licenses/gpl-3.0.html
-"""
-
 import numpy as np
 
 from .algorithm import Algorithm
@@ -57,7 +43,3 @@ class EpsilonGreedy(Algorithm):
 
 
         return chosen_arm
-
-
-
-

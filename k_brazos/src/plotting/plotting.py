@@ -99,7 +99,7 @@ def plot_optimal_selections(steps: int, optimal_selections: np.ndarray, algorith
     # Fijamos el eje Y entre 0 y 100 (con un pequeño margen) para mejor visualización
     plt.ylim(0, 105)
 
-    plt.legend(title='Algoritmos', loc='lower right') # 'lower right' suele tapar menos en estas gráficas
+    plt.legend(title='Algoritmos', loc='lower right')
     plt.tight_layout()
     plt.show()
 
@@ -120,7 +120,6 @@ def plot_regret(steps: int, regret_accumulated: np.ndarray, algorithms: List[Alg
         label = get_algorithm_label(algo)
         plt.plot(range(steps), regret_accumulated[idx], label=label, linewidth=2)
 
-    # TODO: Implementar otros parametros
     for i, item in enumerate(args, start=1):
         if isinstance(item, tuple) and len(item) == 2:
             curve, label = item
