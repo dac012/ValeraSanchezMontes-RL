@@ -1,2 +1,3 @@
 from .AgentMonteCarloOnPolicy import AgentMonteCarloOnPolicy
 from .AgentMonteCarloOffPolicy import AgentMonteCarloOffPolicy
+from .AgentDeepQLearning import AgentDeepQLearning
