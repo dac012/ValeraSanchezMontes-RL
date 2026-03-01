@@ -5,10 +5,9 @@ class AgentSARSA:
     def __init__(self, env: gym.Env,
                  epsilon: float = 1.0,
                  decay: bool = True,
+                 decay_c: float = 1000.0,
                  discount_factor: float = 0.99,
-                 alpha: float = 0.1,
-                 epsilon_min: float = 0.01,
-                 epsilon_decay: float = 0.9995):
+                 alpha: float = 0.1):
 
         # Inicializar Q(s,a)
         self.env = env
@@ -18,10 +17,9 @@ class AgentSARSA:
         # Declaramos parámetros de sarsa
         self.epsilon = float(epsilon)          
         self.decay = bool(decay)               
+        self.decay_c = float(decay_c)         
         self.discount_factor = float(discount_factor)
         self.alpha = float(alpha)
-        self.epsilon_min = float(epsilon_min)
-        self.epsilon_decay = float(epsilon_decay)
 
         
 
@@ -104,9 +102,9 @@ class AgentSARSA:
             self.stats += self.episode_return
             self.list_stats.append(self.stats / (self.t + 1))
 
+            # if decay: epsilon = min(1.0, 1000.0/(t+1))
             if self.decay:
-                self.epsilon = max(self.epsilon_min,
-                                   self.epsilon * self.epsilon_decay)
+                self.epsilon = min(1.0, self.decay_c / (self.t + 1))
 
             # Reseteamos para el siguiente episodio 
             self.t += 1

@@ -1,14 +1,14 @@
 import numpy as np
 import gymnasium as gym
 
+
 class AgentQLearning:
     def __init__(self, env: gym.Env,
                  epsilon: float = 1.0,
                  decay: bool = True,
+                 decay_c: float = 1000.0,         
                  discount_factor: float = 0.99,
-                 alpha: float = 0.1,
-                 epsilon_min: float = 0.01,
-                 epsilon_decay: float = 0.9995):
+                 alpha: float = 0.1):
 
         # Inicializar Q(s,a)
         self.env = env
@@ -18,26 +18,24 @@ class AgentQLearning:
         # Declaramos parámetros de Q-learning
         self.epsilon = float(epsilon)
         self.decay = bool(decay)
+        self.decay_c = float(decay_c)            # para epsilon = min(1, c/(t+1))
         self.discount_factor = float(discount_factor)
         self.alpha = float(alpha)
-        self.epsilon_min = float(epsilon_min)
-        self.epsilon_decay = float(epsilon_decay)
 
-        # Declaramos variables para estadísticas (mismas que en MonteCarloOnPolicy)
+        # Declaramos variables para estadísticas
         self.stats = 0.0
         self.list_stats = []
         self.episode_lengths = []
         self.step_count = 0
-        self.t = 0
+        self.t = 0                              
         self.list_stats_success = []
 
         # Guardamos información del ultimo episodio
         self.episode_return = 0.0
 
 
-
     # Elegimos la próxima acción A usando política derivada de Q (ε-greedy)
-    # (Q-learning es off-policy, pero normalmente actua con ε-greedy para explorar, pseudocodigo del profesor es greedy)
+    # (Q-learning es off-policy, pero normalmente actúa con ε-greedy para explorar)
     def get_action(self, state):
         """Política epsilon-greedy (entrenamiento)."""
         if np.random.rand() < self.epsilon:
@@ -95,21 +93,17 @@ class AgentQLearning:
         if done:
             self.episode_lengths.append(self.step_count)
 
-
-
             if terminated and not truncated:
                 self.list_stats_success.append(1)
             else:
                 self.list_stats_success.append(0)
-
 
             # Actualizamos la media acumulada del return
             self.stats += self.episode_return
             self.list_stats.append(self.stats / (self.t + 1))
 
             if self.decay:
-                self.epsilon = max(self.epsilon_min,
-                                   self.epsilon * self.epsilon_decay)
+                self.epsilon = min(1.0, self.decay_c / (self.t + 1))
 
             # Reseteamos para el siguiente episodio
             self.t += 1
