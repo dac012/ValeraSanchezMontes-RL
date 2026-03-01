@@ -19,7 +19,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from algorithms import Algorithm, EpsilonGreedy, UCB1, Softmax, EpsilonDecay, UCB2
+from src.algorithms import Algorithm, EpsilonGreedy, UCB1, Softmax, EpsilonDecay, UCB2
 
 
 def get_algorithm_label(algo: Algorithm) -> str:

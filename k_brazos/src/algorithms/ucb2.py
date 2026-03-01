@@ -37,7 +37,7 @@ Esto reduce cambios frecuentes de acción y mantiene regret O(log T).
 """
 import numpy as np
 
-from algorithms.algorithm import Algorithm
+from .algorithm import Algorithm
 
 class UCB2(Algorithm):
 

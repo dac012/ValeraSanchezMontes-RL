@@ -1,6 +1,6 @@
 import numpy as np
 
-from arms import ArmBinomial
+from .armbinomial import ArmBinomial
 
 
 class ArmBernoulli(ArmBinomial):

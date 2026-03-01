@@ -1,6 +1,6 @@
 import numpy as np
 
-from algorithms.algorithm import Algorithm
+from .algorithm import Algorithm
 
 class Softmax(Algorithm):
 
