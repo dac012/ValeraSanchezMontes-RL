@@ -3,5 +3,4 @@ from .AgentMonteCarloOffPolicy import AgentMonteCarloOffPolicy
 from .AgentSARSA import AgentSARSA
 from .AgentQLearning import AgentQLearning
 from .AgentDeepQLearning import AgentDeepQLearning
-from .AgentSarsaSemiGradv1 import AgentSemiGradientSARSAv1
-from .AgentSarsaSemiGradv2 import AgentSemiGradientSARSAv2
+from .AgentSarsaSemiGrad import AgentSemiGradientSARSA

@@ -65,7 +65,7 @@ class TileCoder:
 
 
 # CLASE DEL AGENTE 
-class AgentSemiGradientSARSAv1:
+class AgentSemiGradientSARSA:
     def __init__(self, env: gym.Env,
                  n_tilings: int = 8,
                  n_bins: int = 10,
