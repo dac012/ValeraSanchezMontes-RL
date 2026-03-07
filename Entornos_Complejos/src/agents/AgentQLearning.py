@@ -18,7 +18,7 @@ class AgentQLearning:
         # Declaramos parámetros de Q-learning
         self.epsilon = float(epsilon)
         self.decay = bool(decay)
-        self.decay_c = float(decay_c)            # para epsilon = min(1, c/(t+1))
+        self.decay_c = float(decay_c)           
         self.discount_factor = float(discount_factor)
         self.alpha = float(alpha)
 

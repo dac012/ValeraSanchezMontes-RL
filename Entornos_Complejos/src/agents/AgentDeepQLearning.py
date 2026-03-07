@@ -6,8 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 import gymnasium as gym
 
-# RED NEURONAL
-
+# Clase para declarar la red neuronal
 class DQN_Network(nn.Module):
     """
     Esta red aproxima Q(s,a).
@@ -19,7 +18,7 @@ class DQN_Network(nn.Module):
     def __init__(self, num_actions, input_dim):
         super(DQN_Network, self).__init__()
 
-        # Creamos una red totalmente conectada:
+        # Creamos una red totalmente:
         # estado -> 12 neuronas -> 8 neuronas -> num_actions
         self.FC = nn.Sequential(
             nn.Linear(input_dim, 12),
@@ -29,7 +28,7 @@ class DQN_Network(nn.Module):
             nn.Linear(8, num_actions)
         )
 
-        # Inicializamos pesos (mejor estabilidad con ReLU)
+        # Inicializamos pesos 
         for layer in [self.FC]:
             for module in layer:
                 if isinstance(module, nn.Linear):
@@ -42,8 +41,7 @@ class DQN_Network(nn.Module):
         return Q
 
 
-# REPLAY BUFFER
-
+# Clase para el replay buffer
 class ReplayBuffer:
     """
     En DQN no entrenamos con la transición actual directamente.
@@ -70,10 +68,8 @@ class ReplayBuffer:
         return len(self.buffer)
 
 
-# AGENTE DQN
-
+# Clase para el agente DQN
 class AgentDeepQLearning:
-
     def __init__(self, env: gym.Env,
                  epsilon: float = 1.0,
                  decay: bool = True,
@@ -101,11 +97,10 @@ class AgentDeepQLearning:
         self.batch_size = batch_size
         self.target_update_freq = target_update_freq
 
-        # Creamos red principal (la que aprende)
+        # Creamos la red principal (la que aprende)
         self.q_network = DQN_Network(self.nA, self.nS)
 
-        # Creamos red objetivo (la que calcula el target estable)
-        # Al principio ambas redes son iguales
+        # Creamos la red objetivo (la que calcula el target estable)
         self.target_network = DQN_Network(self.nA, self.nS)
         self.target_network.load_state_dict(self.q_network.state_dict())
         self.target_network.eval()  # No se entrena
@@ -161,9 +156,9 @@ class AgentDeepQLearning:
         """
         En cada paso:
 
-        1) Guardamos transición en memoria.
-        2) Si hay suficientes muestras -> entrenamos.
-        3) Cada cierto número de pasos -> actualizamos red objetivo.
+        - Guardamos transición en memoria.
+        - Si hay suficientes muestras -> entrenamos.
+        - Cada cierto número de pasos -> actualizamos red objetivo.
         """
 
         done = terminated or truncated
@@ -210,11 +205,11 @@ class AgentDeepQLearning:
         """
         Implementa la actualización DQN:
 
-        1) Muestreamos minibatch.
-        2) Calculamos Q(S,A) actual.
-        3) Calculamos target:
+        - Muestreamos minibatch.
+        - Calculamos Q(S,A) actual.
+        - Calculamos target:
            target = R + γ max_a' Q_target(S', a')
-        4) Minimizamos el error cuadrático.
+        - Minimizamos el error cuadrático.
         """
 
         states, actions, rewards, next_states, dones = \

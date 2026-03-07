@@ -1,9 +1,7 @@
 import numpy as np
 import gymnasium as gym
-import matplotlib.pyplot as plt
 
-# DEFINICIÓN DEL TILE CODER (Aproximación)
-
+# Clase para el tile coder 
 class TileCoder:
     def __init__(self, n_tilings, n_bins, low, high):
 
@@ -64,7 +62,7 @@ class TileCoder:
         return active_indices
 
 
-# CLASE DEL AGENTE 
+# Clase para el agente
 class AgentSemiGradientSARSA:
     def __init__(self, env: gym.Env,
                  n_tilings: int = 8,

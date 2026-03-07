@@ -14,7 +14,7 @@ class AgentMonteCarloOnPolicy:
         self.epsilon = epsilon
         self.decay = decay
         self.discount_factor = discount_factor
-        self.first_visit = first_visit  # <--- Nuevo parámetro
+        self.first_visit = first_visit 
         
         # Tablas de aprendizaje
         # Q(s, a) -> Valor estimado de tomar la acción 'a' en el estado 's'
@@ -30,13 +30,12 @@ class AgentMonteCarloOnPolicy:
         self.list_stats = []
         self.episode_lengths = []
         self.step_count = 0
-        self.t = 0 # Contador de episodios
-        self.list_stats_success = [] # Para medir éxito en episodios terminados por truncamiento vs terminación normal
+        self.t = 0 
+        self.list_stats_success = [] 
 
     def get_action(self, state):
         """
         Política epsilon-greedy (Soft-policy).
-        Basado en Diapositiva 23: Política epsilon-soft.
         """
         # Probabilidad base para todas las acciones: epsilon / |A|
         pi_A = np.ones(self.nA, dtype=float) * self.epsilon / self.nA
@@ -62,7 +61,6 @@ class AgentMonteCarloOnPolicy:
         """
         self.step_count += 1
         
-        # Guardamos la tupla. Nota: en Gym el reward es R_{t+1} tras hacer A_t en S_t
         self.episode.append((state, action, reward))
         
         done = terminated or truncated
@@ -85,12 +83,11 @@ class AgentMonteCarloOnPolicy:
                 # Actualizamos el Retorno acumulado: G = R_{t+1} + gamma * G_{t+1}
                 G = r + self.discount_factor * G
                 
-                # --- LÓGICA FIRST-VISIT vs EVERY-VISIT ---
+                # Declaración de la lógica first-visit vs all visit según el boooleano
                 update_flag = True
                 
                 if self.first_visit:
                     # Comprobamos si el par (s, a) aparece en los pasos anteriores del episodio (0 hasta i-1)
-                    # Diapositiva 25: "Unless the pair S_t, A_t appears in S_0... S_{t-1}"
                     previous_occurrences = self.episode[:i]
                     for prev_s, prev_a, _ in previous_occurrences:
                         if prev_s == s and prev_a == a:
@@ -99,10 +96,10 @@ class AgentMonteCarloOnPolicy:
                 
                 if update_flag:
                     self.n_visits[s, a] += 1.0
-                    # Alpha variable (promedio simple), como indica la fórmula V(s) = S(s)/N(s) de la Diapositiva 9
+                    # Alpha variable (promedio simple)
                     alpha = 1.0 / self.n_visits[s, a]
                     
-                    # Actualización incremental (Diapositiva 9, abajo)
+                    # Actualización incremental
                     self.Q[s, a] += alpha * (G - self.Q[s, a])
             
             # Estadísticas
@@ -111,11 +108,10 @@ class AgentMonteCarloOnPolicy:
             
             # Decaimiento del epsilon
             if self.decay:
-                # Un decaimiento simple para garantizar convergencia a GLIE (Greedy in the Limit)
                 self.epsilon = max(0.01, min(1.0, 1.0 - np.log10((self.t + 1) / 25)))
                 
             self.t += 1
-            self.episode = [] # Limpiar memoria para el siguiente episodio
+            self.episode = [] 
             self.step_count = 0
 
     def get_stats(self):
