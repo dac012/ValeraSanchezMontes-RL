@@ -48,6 +48,8 @@ Incluye diferentes notebooks donde se aplican distintos algoritmos sobre distint
 
 - [Notebook usando distribución Normal](https://colab.research.google.com/github/dac012/ValeraSanchezMontes-RL/blob/main/k_brazos/normal.ipynb)
 
+- [Notebook de análisis de la cota teórica](https://colab.research.google.com/github/dac012/ValeraSanchezMontes-RL/blob/main/k_brazos/cota.ipynb)
+
 El notebook `main.ipynb` sirve como punto de acceso a todos los experimentos y contiene gráficas comparativas entre los diferentes métodos.
 
 ---
