@@ -11,20 +11,20 @@ class AgentMonteCarloOffPolicy:
         self.decay = decay
         self.discount_factor = discount_factor
         
-        # Tablas de aprendizaje (Q y C según Slide 40)
+        # Tablas de aprendizaje
         self.Q = np.zeros([env.observation_space.n, self.nA])
         self.C = np.zeros([env.observation_space.n, self.nA]) # Suma de pesos W
         
         # Memoria del episodio
         self.episode = [] 
         
-        # Variables para estadísticas (Recuperadas)
+        # Variables para estadísticas 
         self.stats = 0.0
         self.list_stats = []
         self.episode_lengths = []
         self.step_count = 0
         self.t = 0
-        self.list_stats_success = [] # Para medir éxito en episodios terminados por truncamiento vs terminación normal
+        self.list_stats_success = [] 
 
     def get_action(self, state):
         """
@@ -61,15 +61,11 @@ class AgentMonteCarloOffPolicy:
             G = 0.0
             W = 1.0
             
-            # --- Estadísticas (Recuperado) ---
-            # Calculamos el retorno total del episodio para las estadísticas (G_0)
-            # Nota: Esto es solo para graficar, el G del algoritmo se calcula abajo dinámicamente.
             episode_return = sum([x[2] * (self.discount_factor ** i) for i, x in enumerate(self.episode)])
             self.stats += episode_return
             # Evitamos división por cero en la primera iteración si t=0
             self.list_stats.append(self.stats / (self.t + 1))
             
-            # --- Algoritmo 6: Off-policy MC control (Slide 40) ---
             # Recorremos el episodio hacia atrás
             for i in range(len(self.episode) - 1, -1, -1):
                 s, a, r = self.episode[i]
@@ -98,15 +94,14 @@ class AgentMonteCarloOffPolicy:
                 else:
                     prob_behavior = self.epsilon / self.nA
                 
-                # Si por redondeo la prob es 0 (no debería con epsilon > 0), rompemos para evitar error
+                # Si por redondeo la prob es 0 (no debería con epsilon > 0), paramos para evitar error
                 if prob_behavior == 0:
                     break
                     
                 W = W * (1.0 / prob_behavior)
             
-            # --- Decaimiento (Recuperado) ---
+            # Decaimiento del epsilon
             if self.decay:
-                # Decaimiento suave asegurando que no baje de un mínimo para mantener 'b' soft
                 self.epsilon = max(0.01, min(1.0, 1.0 - np.log10((self.t + 1) / 25)))
                 
             self.t += 1
@@ -114,7 +109,4 @@ class AgentMonteCarloOffPolicy:
             self.step_count = 0
 
     def get_stats(self):
-        """
-        Retorna los mismos valores que el agente OnPolicy para compatibilidad.
-        """
         return self.Q, self.list_stats, self.episode_lengths, self.list_stats_success
