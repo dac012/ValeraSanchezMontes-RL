@@ -44,6 +44,7 @@ def get_algorithm_label(algo: Algorithm) -> str:
         label += f" (alpha={algo.alpha})"
     # Añadir más condiciones para otros algoritmos aquí
     else:
+        print(f"Advertencia: Algoritmo '{type(algo).__name__}' no reconocido para etiquetado detallado.")
         raise ValueError("El algoritmo debe ser de la clase Algorithm o una subclase.")
     return label
 
